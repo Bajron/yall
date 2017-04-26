@@ -1,4 +1,5 @@
 #pragma once
+#include "logger.hpp"
 
 class ClogBackend : public LoggerBackend {
 public:
@@ -74,3 +75,40 @@ public:
 private:
   std::vector<std::shared_ptr<LoggerBackend>> children;
 };
+
+enum class Priority {
+  Debug,
+  Info,
+  Warning,
+  Error
+};
+
+std::string toString(const Priority& p) {
+  switch(p) {
+    case Priority::Debug: return "debug";
+    case Priority::Info: return "info";
+    case Priority::Warning: return "warning";
+    case Priority::Error: return "error";
+  }
+  throw std::logic_error("enum not handled, where is your Werror?");
+}
+
+class PriorityDecoratingBackend: public LoggerBackend {
+public:
+  PriorityDecoratingBackend(
+    std::shared_ptr<LoggerBackend> toDecorate,
+    Priority priorityToAdd
+  ) : decorated(toDecorate), priority(priorityToAdd) {
+    
+  }
+
+  void take(LoggerMessage&& msg) override {
+    msg.meta["priority"] = toString(priority);
+    decorated->take(std::move(msg));
+  }
+
+private:
+  std::shared_ptr<LoggerBackend> decorated;
+  Priority priority;
+};
+

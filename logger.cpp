@@ -28,6 +28,10 @@ int main() {
   log.log(MakeFmt(tr(Zero)));
   log.log(MakeFmt(tr(Two)), "one", "two");
   
+  log() << "Wow!";
+  
+  log() << "Result is " << 10;
+  
   //  log.log(MakeFmt(tr(One)));
   //  log.log(MakeFmt(tr(Zero)), " x ");
   //  log.log(MakeFmt(tr(NoImpl)));
