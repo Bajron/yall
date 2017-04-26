@@ -11,7 +11,7 @@ public:
     const auto& seq = msg.sequence;
     
     // Format must be ${1:desc}, but we do not check it here
-    if (seq[0].type == "fmt") {
+    if (seq[0].type == "Fmt") {
       std::string fmt = seq[0].value;
       int inGroup = -1;
       for (size_t i=0; i<fmt.size(); ++i) {
@@ -95,6 +95,10 @@ std::string toString(const Priority& p) {
   throw std::logic_error("enum not handled, where is your Werror?");
 }
 
+std::string toString(const Priority&& p) {
+  return "priority";
+}
+
 class PriorityDecoratingBackend: public LoggerBackend {
 public:
   PriorityDecoratingBackend(
@@ -113,4 +117,6 @@ private:
   std::shared_ptr<LoggerBackend> decorated;
   Priority priority;
 };
+
+
 

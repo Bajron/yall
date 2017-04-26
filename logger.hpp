@@ -40,6 +40,22 @@ public:
   virtual void take(LoggerMessage&& sequence) = 0;
 };
 
+template <typename T>
+constexpr bool isLogMetaData() {
+  return false;
+}
+
+template <typename T>
+typename std::enable_if <isLogMetaData<T>(), LoggerMessage&>::type
+extend(LoggerMessage& msg, T t) {
+  msg.meta[typeString(t)] = toString(t);
+}
+
+template <typename T>
+typename  std::enable_if <!isLogMetaData<T>(), LoggerMessage&>::type
+extend(LoggerMessage& msg, T t) {
+  msg.sequence.emplace_back(TypeAndValue{typeString(t), toString(t)});
+}
 
 class Logger {
   struct Gatherer {
@@ -50,7 +66,7 @@ class Logger {
     
     template <typename T>
     Gatherer& operator<<(const T& t) {
-      msg.sequence.emplace_back(TypeAndValue {"tmp", toString(t)});
+      extend(msg, t);
       return *this;
     }
     
@@ -92,7 +108,7 @@ public:
   void log(const ::yall::detail::Fmt<C>& fmt, Args... args) const {
     static_assert(C == sizeof...(args), "Number of arguments and substitution tokens does not match.");
     LoggerMessage msg;
-    msg.sequence.emplace_back(TypeAndValue {"fmt", toString(fmt)});
+    extend(msg, fmt);
     gather(msg, args...);
     callBackend(std::move(msg));
   }
@@ -114,7 +130,7 @@ private:
   LoggerMessage& gather(LoggerMessage& msg, Head head, Tail... tail) const {
     static_assert(!std::is_base_of<::yall::detail::FmtBase, Head>::value,
                   "Format can be only the very first argument");
-    msg.sequence.emplace_back(TypeAndValue{"tmp", toString(head)});
+    extend(msg, head);
     return gather<Tail...>(msg, tail...);
   }
   
