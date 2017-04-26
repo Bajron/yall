@@ -1,5 +1,6 @@
 // flags: -D EXTRACTION
 #include "logger.hpp"
+#include "backends.hpp"
 
 enum TestLogs {
   FIRST = 0,
