@@ -20,16 +20,16 @@ int main() {
   be->add(std::make_shared<DebugBackend>());
   Logger log(be);
   
-  log.debug("x", "x");
+  log.log("x", 'c', "x", 1, 1.0);
 
-  log.debug(MakeFmt("${1}"), "test");
-  log.debug(MakeFmt(tr(One)), "test");
-  log.debug(MakeFmt(tr(Zero)));
-  log.debug(MakeFmt(tr(Two)), "one", "two");
+  log.log(MakeFmt("${1}"), "test");
+  log.log(MakeFmt(tr(One)), "test");
+  log.log(MakeFmt(tr(Zero)));
+  log.log(MakeFmt(tr(Two)), "one", "two");
   
-//  log.debug(MakeFmt(tr(One)));
-//  log.debug(MakeFmt(tr(Zero)), " x ");
-//  log.debug(MakeFmt(tr(NoImpl)));
+  //  log.log(MakeFmt(tr(One)));
+  //  log.log(MakeFmt(tr(Zero)), " x ");
+  //  log.log(MakeFmt(tr(NoImpl)));
 
 
   static_assert(tokenCount("$ $") == 2);

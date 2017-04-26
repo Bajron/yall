@@ -13,44 +13,40 @@
 #include <iomanip>
 #include <sstream>
 #include <utility>
+#include <unordered_map>
 
-struct KeyValue {
-  std::string key;
+struct TypeAndValue {
+  std::string type;
   std::string value;
   
-  bool operator==(const KeyValue& rhs) const {
-    return key == rhs.key && value == rhs.value;
+  bool operator==(const TypeAndValue& rhs) const {
+    return type == rhs.type && value == rhs.value;
   }
 };
 
-using KeyValueSequence = std::vector<KeyValue>;
+
+struct LoggerMessage {
+  using TypeAndValueSequence = std::vector<TypeAndValue>;
+  using KeyValueStorage = std::unordered_map<std::string, std::string>;
+
+  KeyValueStorage meta;
+  TypeAndValueSequence sequence;
+};
 
 class LoggerBackend {
 public:
-  virtual void take(const KeyValueSequence&& sequence) = 0;
-  
-  static const KeyValue SEPARATOR;
+  virtual void take(LoggerMessage&& sequence) = 0;
 };
-
-const KeyValue LoggerBackend::SEPARATOR = KeyValue{"<separator>", "<meta>"};
 
 class ClogBackend : public LoggerBackend {
 public:
-  void take(const KeyValueSequence&& seq) override {
-    auto sepBack = std::find(seq.rbegin(), seq.rend(), SEPARATOR);
-    auto meta = sepBack.base();
+  void take(LoggerMessage&& msg) override {
+    std::clog << msg.meta["timestamp"] << " <" << msg.meta["thread id"] << "> -- ";
     
-    for (auto it = meta; it != seq.end(); ++it)
-      if (it->key == "thread id") {
-        std::clog << '<' << it->value << "> ";
-      } else {
-        std::clog << it->value << " ";
-      }
-      
-      std::clog << "-- ";
+    const auto& seq = msg.sequence;
     
     // Format must be ${1:desc}, but we do not check it here
-    if (seq[0].key == "fmt") {
+    if (seq[0].type == "fmt") {
       std::string fmt = seq[0].value;
       int inGroup = -1;
       for (size_t i=0; i<fmt.size(); ++i) {
@@ -77,8 +73,8 @@ public:
         }
       }
     } else {
-      for (auto it = seq.begin(); it->key != SEPARATOR.key; ++it) {
-        std::clog << it->value;
+      for (const auto& kv : seq) {
+        std::clog << kv.value;
       }
     }
     std::clog << std::endl;
@@ -87,9 +83,12 @@ public:
 
 class DebugBackend : public LoggerBackend {
 public:
-  void take(const KeyValueSequence&& seq) override {
-    for (const auto& kv : seq) {
-      std::clog << '{' << kv.key << ", " << kv.value << "} ";
+  void take(LoggerMessage&& msg) override {
+    for (const auto& kv : msg.meta) {
+      std::clog << '{' << kv.first << ", " << kv.second << "} ";
+    }
+    for (const auto& kv : msg.sequence) {
+      std::clog << '{' << kv.type << ", " << kv.value << "} ";
     }
     std::clog << std::endl;
   }
@@ -97,12 +96,16 @@ public:
 
 class FanOutBackend : public LoggerBackend {
 public:
-  void take(const KeyValueSequence&& seq) override {
-    for (const auto& ch : children) {
-      ch->take(KeyValueSequence(seq));
-    }
+  void take(LoggerMessage&& msg) override {
+    take(msg);
   }
   
+  void take(const LoggerMessage& msg) {
+    for (const auto& ch : children) {
+      ch->take(LoggerMessage(msg));
+    }
+  }
+
   void add(std::shared_ptr<LoggerBackend> lb) {
     children.push_back(lb);
   }
@@ -128,9 +131,12 @@ struct Fmt : public FmtBase {
   const char* string;
 };
 
-template<typename T>
-std::string toString(const T& s) {
-  return s;
+std::string toString(const char* str) {
+  return str;
+}
+
+std::string toString(char ch) {
+  return std::string(1, ch);
 }
 
 template<size_t C>
@@ -138,7 +144,6 @@ std::string toString(const Fmt<C>& t) {
   return t.string;
 }
 
-template<>
 std::string toString(const std::chrono::system_clock::time_point& t) {
   std::time_t time = std::chrono::system_clock::to_time_t(t);
   std::tm tm = *std::localtime(&time);
@@ -147,16 +152,23 @@ std::string toString(const std::chrono::system_clock::time_point& t) {
   return buf.str();
 }
 
-template<>
 std::string toString(const std::thread::id& id) {
   std::stringstream buf;
   buf << std::hex << id;
   return buf.str();
 }
 
+template<typename T>
+constexpr bool isNumberType() {
+  return (std::is_integral<T>::value || std::is_floating_point<T>::value)
+  && !(std::is_same<char, T>::value
+    || std::is_same<unsigned char, T>::value
+    || std::is_same<wchar_t, T>::value
+    || std::is_same<unsigned wchar_t, T>::value);
+}
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value, std::string>::type
+typename std::enable_if<isNumberType<T>(), std::string>::type
 toString(const T& t) {
   return std::to_string(t);
 }
@@ -168,44 +180,42 @@ public:
   template <
   typename ...Args,
   typename First>
-  void debug(const First& first, Args... args) const {
-    Kvs kvs;
-    gather(kvs, first, args...);
-    callBackend(std::move(kvs));
+  void log(const First& first, Args... args) const {
+    LoggerMessage msg;
+    gather(msg, first, args...);
+    callBackend(std::move(msg));
   }
   
   template <
   size_t C,
   typename ...Args>
-  void debug(const Fmt<C>& fmt, Args... args) const {
+  void log(const Fmt<C>& fmt, Args... args) const {
     static_assert(C == sizeof...(args), "Number of arguments and substitution tokens does not match.");
-    Kvs kvs;
-    kvs.emplace_back(KeyValue {"fmt", toString(fmt)});
-    gather(kvs, args...);
-    callBackend(std::move(kvs));
+    LoggerMessage msg;
+    msg.sequence.emplace_back(TypeAndValue {"fmt", toString(fmt)});
+    gather(msg, args...);
+    callBackend(std::move(msg));
   }
 private:
-  using Kvs = KeyValueSequence;
   
-  inline void callBackend(Kvs&& kvs) const {
-    Kvs data(kvs);
-    data.emplace_back(LoggerBackend::SEPARATOR);
-    data.emplace_back(KeyValue{"timestamp", toString(std::chrono::system_clock::now())});
-    data.emplace_back(KeyValue{"thread id", toString(std::this_thread::get_id())});
+  inline void callBackend(LoggerMessage&& msg) const {
+    LoggerMessage data(msg);
+    data.meta["timestamp"] = toString(std::chrono::system_clock::now());
+    data.meta["thread id"] = toString(std::this_thread::get_id());
     backend->take(std::move(data));
   }
   
   template <typename ...Args>
-  Kvs& gather(Kvs& kvs) const {
-    return kvs;
+  LoggerMessage& gather(LoggerMessage& msg) const {
+    return msg;
   }
   
   template <typename Head, typename ...Tail>
-  Kvs& gather(Kvs& kvs, Head head, Tail... tail) const {
+  LoggerMessage& gather(LoggerMessage& msg, Head head, Tail... tail) const {
     static_assert(!std::is_base_of<FmtBase, Head>::value,
                   "Format can be only the very first argument");
-    kvs.emplace_back(KeyValue{"tmp", toString(head)});
-    return gather<Tail...>(kvs, tail...);
+    msg.sequence.emplace_back(TypeAndValue{"tmp", toString(head)});
+    return gather<Tail...>(msg, tail...);
   }
   
   std::shared_ptr<LoggerBackend> backend;
