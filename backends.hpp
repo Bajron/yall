@@ -1,10 +1,12 @@
 #pragma once
 #include "logger.hpp"
+#include <iomanip>
 
 class ClogBackend : public LoggerBackend {
 public:
   void take(LoggerMessage&& msg) override {
-    std::clog << msg.meta["timestamp"] << " <" << msg.meta["thread id"] << "> -- ";
+    std::clog << msg.meta["timestamp"] << " <" << msg.meta["thread id"] << "> "
+      << std::setw(8) << msg.meta["priority"] << " -- ";
     
     const auto& seq = msg.sequence;
     

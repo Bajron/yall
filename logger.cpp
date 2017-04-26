@@ -32,6 +32,13 @@ int main() {
   
   log() << "Result is " << 10;
   
+  Logger debug(std::make_shared<PriorityDecoratingBackend>(be, Priority::Debug));
+  
+  debug(MakeFmt("Debugging: ${1}!"), "Heeeyy");
+  debug() << "So " << "much" << ' ' << "freedom";
+  debug("So ", "much", ' ', "freedom");
+  
+  
   //  log.log(MakeFmt(tr(One)));
   //  log.log(MakeFmt(tr(Zero)), " x ");
   //  log.log(MakeFmt(tr(NoImpl)));
