@@ -9,7 +9,7 @@ std::string toString(char ch) {
 }
 
 template<size_t C>
-std::string toString(const Fmt<C>& t) {
+std::string toString(const ::yall::detail::Fmt<C>& t) {
   return t.string;
 }
 

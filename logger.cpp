@@ -32,8 +32,5 @@ int main() {
   //  log.log(MakeFmt(tr(Zero)), " x ");
   //  log.log(MakeFmt(tr(NoImpl)));
 
-
-  static_assert(tokenCount("$ $") == 2);
-
   return 0;
 }

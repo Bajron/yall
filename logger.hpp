@@ -58,7 +58,7 @@ public:
   template <
   size_t C,
   typename ...Args>
-  void log(const Fmt<C>& fmt, Args... args) const {
+  void log(const ::yall::detail::Fmt<C>& fmt, Args... args) const {
     static_assert(C == sizeof...(args), "Number of arguments and substitution tokens does not match.");
     LoggerMessage msg;
     msg.sequence.emplace_back(TypeAndValue {"fmt", toString(fmt)});
@@ -81,7 +81,7 @@ private:
   
   template <typename Head, typename ...Tail>
   LoggerMessage& gather(LoggerMessage& msg, Head head, Tail... tail) const {
-    static_assert(!std::is_base_of<FmtBase, Head>::value,
+    static_assert(!std::is_base_of<::yall::detail::FmtBase, Head>::value,
                   "Format can be only the very first argument");
     msg.sequence.emplace_back(TypeAndValue{"tmp", toString(head)});
     return gather<Tail...>(msg, tail...);

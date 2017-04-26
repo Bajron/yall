@@ -1,5 +1,10 @@
 #pragma once
 #include <stdexcept>
+#include <string>
+#include <algorithm>
+
+namespace yall {
+namespace detail {
 
 struct FmtBase {};
 
@@ -21,9 +26,13 @@ struct Fmt : public FmtBase {
 // 98
 #elif __cplusplus < 201402L
 // 11
+
 constexpr size_t placeholderCount(const char* fmt) {
-  return (*fmt == '\0') ? size_t(0) : (*fmt == '$') + placeholderCount(fmt+1);
+  return (*fmt == '\0') 
+    ? size_t(0)
+    : (*fmt == '$') + placeholderCount(fmt + 1);
 }
+
 #else
 
 constexpr size_t readNumber(const char* start, const char* end) {
@@ -87,14 +96,16 @@ constexpr size_t placeholderCount(const char* fmt) {
 
 #endif
 
+} // detail
+} // yall
 
-#ifdef EXTRACTION
+#ifdef YALL_EXTRACTION
 
 #define DO_PRAGMA(x) _Pragma (#x)
 #define MakeFmt(fmt_str) ([](){ DO_PRAGMA(message ("Fmt str " #fmt_str)); return Fmt<placeholderCount(fmt_str)>(fmt_str); }())
 
 #else
 
-#define MakeFmt(fmt_str) Fmt<placeholderCount(fmt_str)>(fmt_str)
+#define MakeFmt(fmt_str) ::yall::detail::Fmt<::yall::detail::placeholderCount(fmt_str)>(fmt_str)
 
 #endif
