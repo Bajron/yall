@@ -43,7 +43,8 @@ public:
 
 class Logger {
 public:
-  Logger(std::shared_ptr<LoggerBackend> aBackend) : backend(aBackend) {}
+  explicit Logger(std::shared_ptr<LoggerBackend> aBackend) : backend(aBackend) {}
+  Logger() = delete;
   
   template <
   typename ...Args,
