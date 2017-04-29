@@ -1,6 +1,6 @@
-// flags: -D EXTRACTION
-#include "logger.hpp"
-#include "backends.hpp"
+#include "yall/logger.hpp"
+#include "yall/backends.hpp"
+#include "yall/priority.hpp"
 
 enum TestLogs {
   FIRST = 0,
@@ -14,6 +14,8 @@ constexpr const char* tr(TestLogs l) {
     :    (l == Two) ? "Two ${2} ${1} log"
     : throw std::logic_error("Translation not found");
 }
+
+using namespace yall;
 
 int main() {
   auto be = std::make_shared<FanOutBackend>();

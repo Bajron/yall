@@ -7,6 +7,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_subdirectory(gtest)
 enable_testing()
 
+include_directories(include/)
+
 add_executable(yall
   logger.cpp
 )

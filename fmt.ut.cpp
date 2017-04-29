@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "fmt.hpp"
+#include "yall/detail/fmt.hpp"
 
 namespace {
 

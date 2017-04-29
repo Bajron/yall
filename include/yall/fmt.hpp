@@ -2,6 +2,11 @@
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+#include <utility>
+#include <cassert>
+#include <cstring>
+
+#include "yall/types.hpp"
 
 namespace yall {
 namespace detail {
@@ -19,6 +24,18 @@ struct Fmt : public FmtBase {
   }
   const char* string;
 };
+
+
+template<size_t C>
+std::string toString(const ::yall::detail::Fmt<C>& t) {
+  return t.string;
+}
+
+template<size_t C>
+std::string typeString(const ::yall::detail::Fmt<C>& t) {
+  return "yall::Fmt";
+}
+
 
 constexpr size_t readNumber(const char* start, const char* end) {
   size_t ret = 0;
@@ -97,6 +114,40 @@ constexpr size_t placeholderCount(const char* fmt) {
 #endif
 
 } // detail
+
+class FmtEvaluatingBackend: public LoggerBackend {
+public:
+  explicit FmtEvaluatingBackend(std::shared_ptr<LoggerBackend> toDecorate):
+  decorated(toDecorate) {}
+
+  void take(LoggerMessage&& msg) override {
+    auto& seq = msg.sequence;
+    if (seq[0].type == "yall::Fmt") {
+      const std::string& fmt = seq[0].value;
+
+      std::string str;
+
+      const char* ch = &fmt[0];
+      const char* end = ch + fmt.size();
+      while (ch != end) {
+        if (*ch == '$') {
+          ++ch;
+          auto indexAndEnd = ::yall::detail::readPlaceholder(ch);
+          str += seq[indexAndEnd.first].value;
+          ch = indexAndEnd.second;
+        } else {
+          str += *ch++;
+        }
+      }
+      seq.clear();
+      seq.emplace_back(TypeAndValue{"yall::Formatted", std::move(str)});
+    }
+    decorated->take(std::move(msg));
+  }
+private:
+  std::shared_ptr<LoggerBackend> decorated;
+};
+
 } // yall
 
 #ifdef YALL_EXTRACTION

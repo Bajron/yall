@@ -1,48 +1,14 @@
 #pragma once
 
-#include <string>
-#include <iostream>
-#include <vector>
-#include <type_traits>
-#include <cassert>
-#include <cstring>
-#include <algorithm>
-#include <thread>
-#include <ctime>
-#include <chrono>
-#include <iomanip>
-#include <sstream>
-#include <utility>
-#include <unordered_map>
+#include "yall/types.hpp"
+#include "yall/fmt.hpp"
+#include "yall/toString.hpp"
 
-#include "fmt.hpp"
-#include "toString.hpp"
+#include <memory>
 
-struct TypeAndValue {
-  std::string type;
-  std::string value;
+namespace yall {
 
-  bool operator==(const TypeAndValue& rhs) const {
-    return type == rhs.type && value == rhs.value;
-  }
-};
-
-struct LoggerMessage {
-  using TypeAndValueSequence = std::vector<TypeAndValue>;
-  using KeyValueStorage = std::unordered_map<std::string, std::string>;
-
-  KeyValueStorage meta;
-  TypeAndValueSequence sequence;
-};
-
-class LoggerBackend {
-public:
-  virtual void take(LoggerMessage&& sequence) = 0;
-  virtual ~LoggerBackend(){};
-};
-
-template <typename T>
-struct isLogMetaData : std::false_type{};
+namespace {
 
 template <typename T>
 typename std::enable_if <isLogMetaData<T>::value, LoggerMessage&>::type
@@ -54,6 +20,8 @@ template <typename T>
 typename  std::enable_if <!isLogMetaData<T>::value, LoggerMessage&>::type
 extend(LoggerMessage& msg, T t) {
   msg.sequence.emplace_back(TypeAndValue{typeString(t), toString(t)});
+}
+
 }
 
 class Logger {
@@ -105,7 +73,8 @@ public:
 
   template <size_t C, typename ...Args>
   void log(const ::yall::detail::Fmt<C>& fmt, Args... args) const {
-    static_assert(C == sizeof...(args), "Number of arguments and substitution tokens does not match.");
+    static_assert(C == sizeof...(args),
+                  "Number of arguments and substitution tokens does not match.");
     LoggerMessage msg;
     extend(msg, fmt);
     gather(msg, args...);
@@ -115,8 +84,8 @@ private:
 
   inline void callBackend(LoggerMessage&& msg) const {
     LoggerMessage data(msg);
-    data.meta["timestamp"] = toString(std::chrono::system_clock::now());
-    data.meta["thread id"] = toString(std::this_thread::get_id());
+    data.meta["yall::TimeStamp"] = toString(std::chrono::system_clock::now());
+    data.meta["yall::ThreadId"] = toString(std::this_thread::get_id());
     backend->take(std::move(data));
   }
 
@@ -135,3 +104,5 @@ private:
 
   std::shared_ptr<LoggerBackend> backend;
 };
+
+}
