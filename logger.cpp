@@ -35,7 +35,8 @@ int main() {
   log.log(MakeFmt(tr(Zero)));
   log.log(MakeFmt(tr(Two)), "one", "two");
 
-  log() << "Wow!";
+  std::string test = "foo";
+  log() << "Wow!" << ' ' << test;
 
   static_assert(isLogMetaData<Priority>::value, "you failed at traits");
   log() << "Result is " << 10 << Priority::Warning;

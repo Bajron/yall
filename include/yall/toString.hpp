@@ -14,6 +14,11 @@ std::string toString(const char* str) {
   return str;
 }
 
+std::string toString(const std::string& str) {
+  return str;
+}
+
+
 std::string toString(char ch) {
   return std::string(1, ch);
 }
