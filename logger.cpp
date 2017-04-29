@@ -20,10 +20,11 @@ using namespace yall;
 int main() {
   auto be = std::make_shared<FanOutBackend>();
   be->add(std::make_shared<DebugBackend>());
-  be->add(
-    std::make_shared<FmtEvaluatingBackend>(
-      std::make_shared<StreamBackend>(globalStream(std::clog))
-    )
+  be->add(BackendBuilder()
+    .makeConsole(std::clog)
+    .decorate<MetaFormattingBackend>()
+    .decorate<FmtEvaluatingBackend>()
+    .take()
   );
   Logger log(be);
 

@@ -3,19 +3,32 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 namespace yall {
+
+class MetaFormattingBackend: public LoggerBackend {
+public:
+  explicit MetaFormattingBackend(std::shared_ptr<LoggerBackend> toDecorate): decorated(toDecorate) {}
+
+  void take(LoggerMessage&& msg) override {
+    std::stringstream ss;
+    ss << msg.meta["yall::TimeStamp"]
+      << " <" << msg.meta["yall::ThreadId"] << "> "
+      << std::setw(8) << msg.meta["yall::Priority"] << " -- ";
+
+      msg.sequence.emplace(msg.sequence.begin(), TypeAndValue{"Formatted", ss.str()});
+    decorated->take(std::move(msg));
+  }
+private:
+  std::shared_ptr<LoggerBackend> decorated;
+};
 
 class StreamBackend : public LoggerBackend {
 public:
   explicit StreamBackend(std::shared_ptr<std::ostream> ostream) : stream(ostream) {}
 
   void take(LoggerMessage&& msg) override {
-    *stream
-      << msg.meta["yall::TimeStamp"]
-      << " <" << msg.meta["yall::ThreadId"] << "> "
-      << std::setw(8) << msg.meta["yall::Priority"] << " -- ";
-
     for (auto&& v : msg.sequence) {
       *stream << v.value;
     }
@@ -68,6 +81,29 @@ public:
   }
 private:
   std::vector<std::shared_ptr<LoggerBackend>> children;
+};
+
+
+class BackendBuilder {
+public:
+  BackendBuilder& makeStream(std::shared_ptr<std::ostream> stream) {
+    object = std::make_shared<StreamBackend>(stream);
+    return *this;
+  }
+  BackendBuilder& makeConsole(std::ostream& console) {
+    return makeStream(globalStream(console));
+  }
+
+  template <class T>
+  BackendBuilder& decorate() {
+    object = std::make_shared<T>(object);
+    return *this;
+  }
+  std::shared_ptr<LoggerBackend> take() {
+    return object;
+  }
+private:
+  std::shared_ptr<LoggerBackend> object;
 };
 
 } // namespace yall
