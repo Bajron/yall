@@ -16,6 +16,7 @@ add_executable(yall
 
 add_executable(test_yall
   fmt.ut.cpp
+  priority.ut.cpp
 )
 target_link_libraries(test_yall gmock gtest gtest_main)
 

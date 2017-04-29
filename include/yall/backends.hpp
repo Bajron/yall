@@ -47,7 +47,7 @@ struct no_delete {
 
 }  // namespace detail
 
-std::shared_ptr<std::ostream> globalStream(std::ostream& s) {
+inline std::shared_ptr<std::ostream> globalStream(std::ostream& s) {
   return std::shared_ptr<std::ostream>(&s, detail::no_delete());
 }
 

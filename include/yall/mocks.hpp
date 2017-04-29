@@ -1,5 +1,4 @@
 #pragma once
-
 #include <gmock/gmock.h>
 #include "yall/backends.hpp"
 
@@ -13,7 +12,7 @@ public:
 };
 
 namespace yall {
-  void PrintTo(const LoggerMessage& msg, ::std::ostream* os) {
+  inline void PrintTo(const LoggerMessage& msg, ::std::ostream* os) {
     *os << "LoggerMessage{meta:{";
     for (const auto& kv : msg.meta) {
       *os << "{" << kv.first << ", " << kv.second << "}";

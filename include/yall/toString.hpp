@@ -10,16 +10,16 @@ std::string typeString(const T& t) {
   return typeid(t).name();
 }
 
-std::string toString(const char* str) {
+inline std::string toString(const char* str) {
   return str;
 }
 
-std::string toString(const std::string& str) {
+inline std::string toString(const std::string& str) {
   return str;
 }
 
 
-std::string toString(char ch) {
+inline std::string toString(char ch) {
   return std::string(1, ch);
 }
 
@@ -38,7 +38,7 @@ toString(const T& t) {
   return std::to_string(t);
 }
 
-std::string toString(const std::chrono::system_clock::time_point& t) {
+inline std::string toString(const std::chrono::system_clock::time_point& t) {
   std::time_t time = std::chrono::system_clock::to_time_t(t);
   std::tm tm = *std::localtime(&time);
   std::stringstream buf;
@@ -46,7 +46,7 @@ std::string toString(const std::chrono::system_clock::time_point& t) {
   return buf.str();
 }
 
-std::string toString(const std::thread::id& id) {
+inline std::string toString(const std::thread::id& id) {
   std::stringstream buf;
   buf << std::hex << id;
   return buf.str();
