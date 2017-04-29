@@ -20,21 +20,6 @@ struct Fmt : public FmtBase {
   const char* string;
 };
 
-#if __cplusplus < 199711L
-// ancient
-#elif __cplusplus <  201103L
-// 98
-#elif __cplusplus < 201402L
-// 11
-
-constexpr size_t placeholderCount(const char* fmt) {
-  return (*fmt == '\0') 
-    ? size_t(0)
-    : (*fmt == '$') + placeholderCount(fmt + 1);
-}
-
-#else
-
 constexpr size_t readNumber(const char* start, const char* end) {
   size_t ret = 0;
 
@@ -54,26 +39,41 @@ constexpr size_t readNumber(const char* start, const char* end) {
 constexpr std::pair<size_t, const char*> readPlaceholder(const char* it) {
   if (*it != '{')
     throw std::logic_error("Expected '{' after '$'");
-  ++it;
+    ++it;
 
-  auto start = it;
-  while (*it != ':' && *it != '}' && *it != '\0') ++it;
+    auto start = it;
+    while (*it != ':' && *it != '}' && *it != '\0') ++it;
 
-  if (*it == '\0')
-    throw std::logic_error("Closing brace not found");
-  
-  auto end = it;
-  auto ret = readNumber(start, end);
-  
-  while (*it != '}' && *it != '\0') ++it;
-  
-  if (*it == '\0')
-    throw std::logic_error("Closing brace not found");
-  
-  ++it;
-  
-  return std::make_pair(ret, it);
+    if (*it == '\0')
+      throw std::logic_error("Closing brace not found");
+
+    auto end = it;
+    auto ret = readNumber(start, end);
+
+    while (*it != '}' && *it != '\0') ++it;
+
+    if (*it == '\0')
+      throw std::logic_error("Closing brace not found");
+
+    ++it;
+
+    return std::make_pair(ret, it);
 }
+
+#if __cplusplus < 199711L
+// ancient
+#elif __cplusplus <  201103L
+// 98
+#elif __cplusplus < 201402L
+// 11
+
+constexpr size_t placeholderCount(const char* fmt) {
+  return (*fmt == '\0')
+    ? size_t(0)
+    : (*fmt == '$') + placeholderCount(fmt + 1);
+}
+
+#else
 
 constexpr size_t placeholderCount(const char* fmt) {
   size_t maxFound = 0;

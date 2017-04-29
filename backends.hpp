@@ -1,50 +1,69 @@
 #pragma once
 #include "logger.hpp"
 #include <iomanip>
+#include <iosfwd>
+#include <memory>
 
-class ClogBackend : public LoggerBackend {
+class FmtEvaluatingBackend: public LoggerBackend {
 public:
+  explicit FmtEvaluatingBackend(std::shared_ptr<LoggerBackend> toDecorate):
+    decorated(toDecorate) {}
+
   void take(LoggerMessage&& msg) override {
-    std::clog << msg.meta["timestamp"] << " <" << msg.meta["thread id"] << "> "
-      << std::setw(8) << msg.meta["priority"] << " -- ";
-    
-    const auto& seq = msg.sequence;
-    
-    // Format must be ${1:desc}, but we do not check it here
+    auto& seq = msg.sequence;
     if (seq[0].type == "Fmt") {
-      std::string fmt = seq[0].value;
-      int inGroup = -1;
-      for (size_t i=0; i<fmt.size(); ++i) {
-        if (inGroup == -1) {
-          if (fmt[i] == '$') {
-            assert((i+2) < fmt.size() && fmt[i+1] == '{');
-            inGroup = i + 2;
-          } else {
-            std::clog << fmt[i];
-          }
+      const std::string& fmt = seq[0].value;
+
+      std::string str;
+
+      const char* ch = &fmt[0];
+      const char* end = ch + fmt.size();
+      while (ch != end) {
+        if (*ch == '$') {
+          ++ch;
+          auto indexAndEnd = ::yall::detail::readPlaceholder(ch);
+          str += seq[indexAndEnd.first].value;
+          ch = indexAndEnd.second;
         } else {
-          if (fmt[i] == '}') {
-            int idx = stoi(fmt.substr(inGroup, i - inGroup));
-            std::clog << seq[idx].value;
-            inGroup = -1;
-          }
-          if (fmt[i] == ':') {
-            int idx = stoi(fmt.substr(inGroup, i - inGroup));
-            std::clog << seq[idx].value;
-            inGroup = -1;
-            while (fmt[i] != '}') ++i;
-            --i;
-          }
+          str += *ch++;
         }
       }
-    } else {
-      for (const auto& kv : seq) {
-        std::clog << kv.value;
-      }
+      seq.clear();
+      seq.emplace_back(TypeAndValue{"Formatted", std::move(str)});
     }
-    std::clog << std::endl;
+    decorated->take(std::move(msg));
   }
+private:
+    std::shared_ptr<LoggerBackend> decorated;
 };
+
+class StreamBackend : public LoggerBackend {
+public:
+  explicit StreamBackend(std::shared_ptr<std::ostream> ostream) : stream(ostream) {}
+
+  void take(LoggerMessage&& msg) override {
+    *stream
+      << msg.meta["timestamp"]
+      << " <" << msg.meta["thread id"] << "> "
+      << std::setw(8) << msg.meta["priority"] << " -- ";
+
+    for (auto&& v : msg.sequence) {
+      *stream << v.value;
+    }
+    *stream << std::endl;
+  }
+private:
+  std::shared_ptr<std::ostream> stream;
+};
+
+struct no_delete {
+  template <typename T>
+  void operator()(T*){}
+};
+
+std::shared_ptr<std::ostream> globalStream(std::ostream& s) {
+  return std::shared_ptr<std::ostream>(&s, no_delete());
+}
 
 class DebugBackend : public LoggerBackend {
 public:
@@ -64,13 +83,13 @@ public:
   void take(LoggerMessage&& msg) override {
     take(msg);
   }
-  
+
   void take(const LoggerMessage& msg) {
     for (const auto& ch : children) {
       ch->take(LoggerMessage(msg));
     }
   }
-  
+
   void add(std::shared_ptr<LoggerBackend> lb) {
     children.push_back(lb);
   }
@@ -85,6 +104,9 @@ enum class Priority {
   Error
 };
 
+template <>
+struct isLogMetaData<Priority> : std::true_type {};
+
 std::string toString(const Priority& p) {
   switch(p) {
     case Priority::Debug: return "debug";
@@ -95,7 +117,7 @@ std::string toString(const Priority& p) {
   throw std::logic_error("enum not handled, where is your Werror?");
 }
 
-std::string toString(const Priority&& p) {
+std::string typeString(const Priority&) {
   return "priority";
 }
 
@@ -105,7 +127,7 @@ public:
     std::shared_ptr<LoggerBackend> toDecorate,
     Priority priorityToAdd
   ) : decorated(toDecorate), priority(priorityToAdd) {
-    
+
   }
 
   void take(LoggerMessage&& msg) override {
