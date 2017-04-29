@@ -54,13 +54,13 @@ public:
 class FanOutBackend : public LoggerBackend {
 public:
   void take(LoggerMessage&& msg) override {
-    take(msg);
-  }
-
-  void take(const LoggerMessage& msg) {
-    for (const auto& ch : children) {
-      ch->take(LoggerMessage(msg));
+    if (children.empty()) return;
+    int n = children.size();
+    const LoggerMessage& copy = msg;
+    for (int i = 0; i < n - 1; ++i) {
+      children[i]->take(LoggerMessage(copy));
     }
+    children[n-1]->take(std::move(msg));
   }
 
   void add(std::shared_ptr<LoggerBackend> lb) {
