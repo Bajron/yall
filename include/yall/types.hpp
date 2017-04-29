@@ -25,6 +25,10 @@ namespace yall {
 
     KeyValueStorage meta;
     TypeAndValueSequence sequence;
+
+    bool operator==(const LoggerMessage& rhs) const {
+      return meta == rhs.meta && sequence == rhs.sequence;
+    }
   };
 
   class LoggerBackend {

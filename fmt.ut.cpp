@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "yall/detail/fmt.hpp"
+#include "yall/mocks.hpp"
+#include "yall/fmt.hpp"
 
 namespace {
 
@@ -56,5 +57,35 @@ TEST_F(YallDetailFmtFormatShould, BeAConstExpression) {
   static_assert(::yall::detail::placeholderCount("${1:x} ${2}") == 2,
                 "placeholderCount is not constexpr or does not work");
 }
+
+
+struct YallFmtEvaluatingBackendShould: public ::testing::Test {
+  YallFmtEvaluatingBackendShould():
+    decoratedMock(std::make_shared<MockLoggerBackend>()),
+    uut(decoratedMock) {
+  }
+  std::shared_ptr<MockLoggerBackend> decoratedMock;
+  ::yall::FmtEvaluatingBackend uut;
+};
+
+TEST_F(YallFmtEvaluatingBackendShould, ForwardToDecorated) {
+  ::yall::LoggerMessage msg;
+  msg.sequence.emplace_back(yall::TypeAndValue{"test", "test"});
+  EXPECT_CALL(*decoratedMock, take(msg)).Times(1);
+  uut.take(::yall::LoggerMessage(msg));
+}
+
+TEST_F(YallFmtEvaluatingBackendShould, EvaluateFormatting) {
+  ::yall::LoggerMessage msg;
+  msg.sequence.emplace_back(yall::TypeAndValue{"yall::Fmt", "x${1}x"});
+  msg.sequence.emplace_back(yall::TypeAndValue{"test", "test"});
+
+  ::yall::LoggerMessage formatted;
+  formatted.sequence.emplace_back(yall::TypeAndValue{"yall::Formatted", "xtestx"});
+
+  EXPECT_CALL(*decoratedMock, take(formatted)).Times(1);
+  uut.take(::yall::LoggerMessage(msg));
+}
+
 
 }
