@@ -1,6 +1,6 @@
-#include "yall/logger.hpp"
+#include "yall/logger"
 #include "yall/backends.hpp"
-#include "yall/priority.hpp"
+#include "yall/prefix.hpp"
 
 enum TestLogs {
   FIRST = 0,
@@ -47,6 +47,14 @@ int main() {
   debug() << "So " << "much" << ' ' << "freedom";
   debug("So ", "much", ' ', "freedom");
 
+  debug() << Priority::Error << "Weird?";
+  log() << Priority::Error << "Weird..." << Priority::Warning;
+
+  PrefixedLogger root(be);
+  auto child = root.child("child");
+
+  root() << "Hello";
+  child() << "ohai!";
 
   //  log.log(MakeFmt(tr(One)));
   //  log.log(MakeFmt(tr(Zero)), " x ");

@@ -5,7 +5,6 @@
 
 namespace {
 
-
 struct YallNullBackendShould: public ::testing::Test {
   YallNullBackendShould():
     uut() {

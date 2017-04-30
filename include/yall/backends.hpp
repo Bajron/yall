@@ -15,7 +15,8 @@ public:
     std::stringstream ss;
     ss << msg.meta["yall::TimeStamp"]
       << " <" << msg.meta["yall::ThreadId"] << "> "
-      << std::setw(8) << msg.meta["yall::Priority"] << " -- ";
+      << std::setw(8) << msg.meta["yall::Priority"] << " -"
+      << msg.meta["yall::Prefix"] << "- ";
 
     msg.sequence.emplace(msg.sequence.begin(), TypeAndValue{"yall::Formatted", ss.str()});
     decorated->take(std::move(msg));
@@ -91,7 +92,6 @@ class NullBackend : public LoggerBackend {
 public:
   void take(LoggerMessage&&) override {}
 };
-
 
 class BackendBuilder {
 public:

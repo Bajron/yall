@@ -4,6 +4,7 @@
 #include "yall/mocks.hpp"
 #include "yall/backends.hpp"
 #include "yall/fmt.hpp"
+#include "yall/priority.hpp"
 
 namespace {
 
@@ -114,6 +115,13 @@ TEST_F(YallLoggerShould, HandleVariousStrings) {
   for (int i=0; i < 5; ++i) {
     EXPECT_EQ("test", msg.sequence[i].value);
   }
+}
+
+TEST_F(YallLoggerShould, HandlePrioritySetting) {
+  uut.log("test", ::yall::Priority::Debug);
+  EXPECT_EQ(1, msg.sequence.size());
+  EXPECT_EQ("test", msg.sequence[0].value);
+  EXPECT_EQ("debug", msg.meta["yall::Priority"]);
 }
 
 }

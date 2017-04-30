@@ -19,7 +19,7 @@ namespace yall {
   template <>
   struct isLogMetaData<Priority> : std::true_type {};
 
-  std::string toString(const Priority& p) {
+  inline std::string toString(const Priority& p) {
     switch(p) {
       case Priority::Debug: return "debug";
       case Priority::Info: return "info";
@@ -29,7 +29,7 @@ namespace yall {
     throw std::logic_error("enum not handled, where is your Werror?");
   }
 
-  std::string typeString(const Priority&) {
+  inline std::string typeString(const Priority&) {
     return "yall::Priority";
   }
 
