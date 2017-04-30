@@ -39,10 +39,12 @@ toString(const T& t) {
 }
 
 inline std::string toString(const std::chrono::system_clock::time_point& t) {
+  auto milis = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
   std::time_t time = std::chrono::system_clock::to_time_t(t);
   std::tm tm = *std::localtime(&time);
   std::stringstream buf;
-  buf << std::put_time(&tm, "%F %T");
+  buf << std::put_time(&tm, "%F %T")
+    << '.' << std::setfill('0') << std::setw(3) << milis % 1000;
   return buf.str();
 }
 

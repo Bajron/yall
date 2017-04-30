@@ -1,6 +1,7 @@
 #include "yall/logger"
 #include "yall/backends.hpp"
 #include "yall/prefix.hpp"
+#include "yall/timer.hpp"
 
 enum TestLogs {
   FIRST = 0,
@@ -28,6 +29,8 @@ int main() {
   );
   Logger log(be);
 
+  Timer<> tm(log);
+
   log.log("x", 'c', "x", 1, 1.0);
 
   log.log(MakeFmt("${1}"), "test");
@@ -41,6 +44,8 @@ int main() {
   static_assert(isLogMetaData<Priority>::value, "you failed at traits");
   log() << "Result is " << 10 << Priority::Warning;
 
+  tm("Playing with plain logger done");
+
   Logger debug(std::make_shared<PriorityDecoratingBackend>(be, Priority::Debug));
 
   debug(MakeFmt("Debugging: ${1}!"), "Heeeyy");
@@ -50,11 +55,15 @@ int main() {
   debug() << Priority::Error << "Weird?";
   log() << Priority::Error << "Weird..." << Priority::Warning;
 
+  tm("Debug logger done");
+
   PrefixedLogger root(be);
   auto child = root.child("child");
 
   root() << "Hello";
   child() << "ohai!";
+
+  tm("Prefixing games done");
 
   //  log.log(MakeFmt(tr(One)));
   //  log.log(MakeFmt(tr(Zero)), " x ");
