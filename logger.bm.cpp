@@ -26,7 +26,7 @@ static void BM_LogStream(benchmark::State& state) {
 }
 BENCHMARK(BM_LogStream);
 
-static void BM_LogPrintf(benchmark::State& state) {
+static void BM_LogSprintf(benchmark::State& state) {
   std::vector<char> buf(1024);
   size_t off = 0;
   while (state.KeepRunning()) {
@@ -36,7 +36,7 @@ static void BM_LogPrintf(benchmark::State& state) {
       buf.resize(buf.size() + 1024);
   }
 }
-BENCHMARK(BM_LogPrintf);
+BENCHMARK(BM_LogSprintf);
 
 }
 
