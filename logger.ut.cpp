@@ -2,6 +2,7 @@
 
 #include "yall/logger.hpp"
 #include "yall/mocks.hpp"
+#include "yall/backends.hpp"
 
 namespace {
 
@@ -24,6 +25,10 @@ struct YallLoggerShould: public ::testing::Test {
     EXPECT_EQ(2, msg.sequence.size());
     EXPECT_EQ(msg.sequence[0].value, "test");
     EXPECT_EQ(msg.sequence[1].value, "1");
+  }
+  void verifyOneXCall() {
+    EXPECT_EQ(1, msg.sequence.size());
+    EXPECT_EQ("x", msg.sequence[0].value);
   }
 };
 
@@ -61,6 +66,26 @@ TEST_F(YallLoggerShould, HandleNumbers) {
     float(1), double(1));
   EXPECT_EQ(10, msg.sequence.size());
 }
+
+TEST_F(YallLoggerShould, UseTheSameBackendAfterCopy) {
+  auto copy = uut;
+  copy.log('x');
+  verifyOneXCall();
+}
+
+TEST_F(YallLoggerShould, UseTheSameBackendAfterAssign) {
+  ::yall::Logger copy = ::yall::Logger(std::make_shared<yall::NullBackend>());
+  copy = uut;
+  copy.log('x');
+  verifyOneXCall();
+}
+
+TEST_F(YallLoggerShould, UseTheSameBackendAfterSelfAssign) {
+  uut = uut;
+  uut.log('x');
+  verifyOneXCall();
+}
+
 
 
 }

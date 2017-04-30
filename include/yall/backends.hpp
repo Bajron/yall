@@ -83,6 +83,11 @@ private:
   std::vector<std::shared_ptr<LoggerBackend>> children;
 };
 
+class NullBackend : public LoggerBackend {
+public:
+  void take(LoggerMessage&&) override {}
+};
+
 
 class BackendBuilder {
 public:
