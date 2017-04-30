@@ -5,6 +5,7 @@ add_subdirectory(googletest)
 add_subdirectory(benchmark)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_FLAGS_COVERAGE "-O0 --coverage")

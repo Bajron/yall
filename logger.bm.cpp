@@ -4,6 +4,10 @@
 #include <sstream>
 #include <cstdio>
 #include <vector>
+#include <thread>
+
+#include <sys/types.h>
+#include <unistd.h>
 
 using namespace yall;
 
@@ -17,12 +21,12 @@ static void BM_LoggerStream(benchmark::State& state) {
 }
 BENCHMARK(BM_LoggerStream);
 
-// Not so accurate (timestamps and stuff)
-
 static void BM_LogStream(benchmark::State& state) {
   std::stringstream stream;
   while (state.KeepRunning())
-    stream << "test" << std::endl;
+    stream << toString(std::chrono::system_clock::now())
+      << " <" << std::this_thread::get_id()  << "> "
+      << "test" << std::endl;
 }
 BENCHMARK(BM_LogStream);
 
@@ -30,10 +34,18 @@ static void BM_LogSprintf(benchmark::State& state) {
   std::vector<char> buf(1024);
   size_t off = 0;
   while (state.KeepRunning()) {
-    auto c = snprintf(&buf[off], buf.size() - off, "test\n");
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+
+    auto c = snprintf(&buf[off], buf.size() - off,
+      "%s <%d> test\n",
+      asctime (timeinfo), (int)getpid()
+    );
     off += c;
-    if (buf.size() - off < 64)
-      buf.resize(buf.size() + 1024);
+    if (buf.size() - off < 256)
+      buf.resize(buf.size() + 2048);
   }
 }
 BENCHMARK(BM_LogSprintf);
