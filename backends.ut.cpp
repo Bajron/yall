@@ -115,4 +115,29 @@ TEST_F(YallFanOutBackendShould, ForwardToAllAdded) {
 }
 
 
+struct YallSequencePrefixingBackendShould: public ::testing::Test {
+  YallSequencePrefixingBackendShould():
+  decoratedMock(std::make_shared<MockLoggerBackend>()),
+  uut(decoratedMock, "test prefix") {
+  }
+  std::shared_ptr<MockLoggerBackend> decoratedMock;
+  ::yall::SequencePrefixingBackend uut;
+};
+
+TEST_F(YallSequencePrefixingBackendShould, PrefixSequenceAndForward) {
+  ::yall::LoggerMessage msg;
+  EXPECT_CALL(*decoratedMock, take(::testing::_))
+    .Times(1).WillOnce(::testing::SaveArg<0>(&msg));;
+
+  ::yall::LoggerMessage input;
+  input.sequence.push_back(::yall::TypeAndValue{"test", "test value"});
+
+  uut.take(::yall::LoggerMessage(input));
+
+  EXPECT_EQ(2, msg.sequence.size());
+  EXPECT_EQ("test value", msg.sequence[1].value);
+  EXPECT_EQ("yall::Prefix", msg.sequence[0].type);
+  EXPECT_EQ("test prefix", msg.sequence[0].value);
+}
+
 }

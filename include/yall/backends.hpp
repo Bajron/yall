@@ -88,6 +88,20 @@ private:
   std::vector<std::shared_ptr<LoggerBackend>> children;
 };
 
+class SequencePrefixingBackend: public LoggerBackend {
+public:
+  SequencePrefixingBackend(std::shared_ptr<LoggerBackend> toDecorate, const std::string& prefix):
+    decorated(toDecorate), prefix(prefix) {}
+
+  void take(LoggerMessage&& msg) override {
+      msg.sequence.insert(msg.sequence.begin(), TypeAndValue{"yall::Prefix", prefix});
+      decorated->take(std::move(msg));
+    }
+private:
+  std::shared_ptr<LoggerBackend> decorated;
+  std::string prefix;
+};
+
 class NullBackend : public LoggerBackend {
 public:
   void take(LoggerMessage&&) override {}
@@ -108,6 +122,12 @@ public:
     object = std::make_shared<T>(object);
     return *this;
   }
+  template <class T, class P>
+  BackendBuilder& decorateWith(const P& p) {
+    object = std::make_shared<T>(object, p);
+    return *this;
+  }
+
   std::shared_ptr<LoggerBackend> take() {
     return object;
   }
