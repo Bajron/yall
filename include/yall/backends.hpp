@@ -17,7 +17,7 @@ public:
       << " <" << msg.meta["yall::ThreadId"] << "> "
       << std::setw(8) << msg.meta["yall::Priority"] << " -- ";
 
-      msg.sequence.emplace(msg.sequence.begin(), TypeAndValue{"Formatted", ss.str()});
+    msg.sequence.emplace(msg.sequence.begin(), TypeAndValue{"yall::Formatted", ss.str()});
     decorated->take(std::move(msg));
   }
 private:
@@ -66,6 +66,10 @@ public:
 
 class FanOutBackend : public LoggerBackend {
 public:
+  FanOutBackend() = default;
+  explicit FanOutBackend(const std::initializer_list<std::shared_ptr<LoggerBackend>>& iList)
+    : children(iList) {}
+
   void take(LoggerMessage&& msg) override {
     if (children.empty()) return;
     int n = children.size();

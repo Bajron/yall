@@ -18,6 +18,7 @@ add_executable(test_yall
   fmt.ut.cpp
   priority.ut.cpp
   logger.ut.cpp
+  backends.ut.cpp
 )
 target_link_libraries(test_yall gmock gtest gtest_main)
 

@@ -12,13 +12,13 @@ namespace {
 
 template <typename T>
 typename std::enable_if <isLogMetaData<T>::value, LoggerMessage&>::type
-extend(LoggerMessage& msg, T t) {
+extend(LoggerMessage& msg, const T& t) {
   msg.meta[typeString(t)] = toString(t);
 }
 
 template <typename T>
 typename  std::enable_if <!isLogMetaData<T>::value, LoggerMessage&>::type
-extend(LoggerMessage& msg, T t) {
+extend(LoggerMessage& msg, const T& t) {
   msg.sequence.emplace_back(TypeAndValue{typeString(t), toString(t)});
 }
 
@@ -95,7 +95,7 @@ private:
   }
 
   template <typename Head, typename ...Tail>
-  LoggerMessage& gather(LoggerMessage& msg, Head head, Tail... tail) const {
+  LoggerMessage& gather(LoggerMessage& msg, const Head& head, Tail... tail) const {
     static_assert(!std::is_base_of<::yall::detail::FmtBase, Head>::value,
                   "Format can be only the very first argument");
     extend(msg, head);

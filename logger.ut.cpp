@@ -3,6 +3,7 @@
 #include "yall/logger.hpp"
 #include "yall/mocks.hpp"
 #include "yall/backends.hpp"
+#include "yall/fmt.hpp"
 
 namespace {
 
@@ -29,6 +30,12 @@ struct YallLoggerShould: public ::testing::Test {
   void verifyOneXCall() {
     EXPECT_EQ(1, msg.sequence.size());
     EXPECT_EQ("x", msg.sequence[0].value);
+  }
+  void verifyFmtTest() {
+    EXPECT_EQ(2, msg.sequence.size());
+    EXPECT_EQ("yall::Fmt", msg.sequence[0].type);
+    EXPECT_EQ("${1}", msg.sequence[0].value);
+    EXPECT_EQ("test", msg.sequence[1].value);
   }
 };
 
@@ -86,6 +93,27 @@ TEST_F(YallLoggerShould, UseTheSameBackendAfterSelfAssign) {
   verifyOneXCall();
 }
 
+TEST_F(YallLoggerShould, AcceptFmtAsFirstArgument) {
+  uut.log(MakeFmt("${1}"), "test");
+  verifyFmtTest();
+}
 
+TEST_F(YallLoggerShould, AcceptFmtAsFirstArgumentLValue) {
+  auto fmt = MakeFmt("${1}");
+  uut.log(fmt, "test");
+  verifyFmtTest();
+}
+
+TEST_F(YallLoggerShould, HandleVariousStrings) {
+  std::string str = "test";
+  const char* cch = "test";
+  char* ch = (char*)cch;
+
+  uut.log(str, cch, ch, "test", str.c_str());
+  EXPECT_EQ(5, msg.sequence.size());
+  for (int i=0; i < 5; ++i) {
+    EXPECT_EQ("test", msg.sequence[i].value);
+  }
+}
 
 }
